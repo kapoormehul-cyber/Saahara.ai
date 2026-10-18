@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B2864"/>
+      <stop offset="100%" stop-color="#1E112A"/>
+    </linearGradient>
+    <linearGradient id="roseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDA4AF"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded shield back -->
+  <path d="M50 8C68 18 86 16 86 36C86 64 56 86 50 92C44 86 14 64 14 36C14 16 32 18 50 8Z" fill="url(#shieldGrad)"/>
+  <!-- Inner glowing aura -->
+  <circle cx="50" cy="46" r="24" fill="#6B21A8" fill-opacity="0.3"/>
+  <!-- Protective Petals / Beacon Star -->
+  <path d="M50 24C52 35 60 43 72 45C60 47 52 55 50 66C48 55 40 47 28 45C40 43 48 35 50 24Z" fill="url(#roseGrad)"/>
+  <!-- Core heart/light dot -->
+  <circle cx="50" cy="45" r="5" fill="#FFFFFF"/>
+  <circle cx="50" cy="74" r="2.5" fill="url(#tealGrad)"/>
+</svg>
