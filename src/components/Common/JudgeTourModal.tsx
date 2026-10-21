@@ -141,12 +141,28 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
 
   const currentSection = sections[currentSectionIndex];
 
-  const handleExecuteAction = (tab: string, actionKey?: string) => {
+  const handleSelectStep = (tab: string, actionKey?: string, sectionIndex?: number) => {
+    if (sectionIndex !== undefined) {
+      setCurrentSectionIndex(sectionIndex);
+    }
+    // 1. Immediately close the main Judge Walkthrough panel
+    onClose();
+
+    // 2. Navigate to destination tab / website section
     onNavigateTab(tab);
+
+    // 3. Scroll window to top so section is fully in foreground view
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      // fallback
+    }
+
+    // 4. Trigger specific action if present
     if (actionKey) {
       setTimeout(() => {
         onOpenAction(actionKey);
-      }, 300);
+      }, 200);
     }
   };
 
@@ -169,7 +185,7 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
                   AZINHACK ’26 Judge Walkthrough
                 </span>
                 <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-slate-300 font-semibold">
-                  4 Grouped Sections
+                  4 Evaluator Steps
                 </span>
               </div>
               <h3 className="text-base font-bold text-white">Interactive Evaluation Guide</h3>
@@ -177,30 +193,33 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
             title="Exit Walkthrough"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Section Tabs Selector */}
-        <div className="grid grid-cols-4 bg-slate-100 p-1.5 border-b border-slate-200 text-xs font-semibold">
+        {/* Step Selector Tabs (Clicking any step immediately closes panel & opens that live section) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 bg-slate-100 p-2 border-b border-slate-200 gap-1.5 text-xs font-semibold">
           {sections.map((sec, idx) => (
             <button
               key={sec.id}
-              onClick={() => {
-                setCurrentSectionIndex(idx);
-                onNavigateTab(sec.tab);
-              }}
-              className={`py-2 px-2 rounded-xl transition-all text-center flex flex-col items-center gap-0.5 ${
+              onClick={() => handleSelectStep(sec.tab, undefined, idx)}
+              className={`py-2 px-2.5 rounded-xl transition-all text-left flex flex-col gap-0.5 cursor-pointer group ${
                 idx === currentSectionIndex
-                  ? 'bg-white text-indigo-950 shadow-sm font-bold border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  ? 'bg-white text-indigo-950 shadow-xs font-bold border border-slate-300 ring-2 ring-indigo-500/20'
+                  : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white border border-transparent'
               }`}
+              title={`Click to open Step ${sec.id}: ${sec.title}`}
             >
-              <span className="text-[10px] text-slate-400 uppercase">Part {sec.id}</span>
-              <span className="truncate w-full text-[11px]">{sec.title.split(' ')[0]}</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] text-indigo-600 uppercase font-black">Step {sec.id}</span>
+                <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              </div>
+              <span className="truncate w-full text-[11px] font-bold text-slate-800">
+                {sec.title.split('&')[0].trim()}
+              </span>
             </button>
           ))}
         </div>
@@ -223,10 +242,12 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
             </div>
 
             <button
-              onClick={() => onNavigateTab(currentSection.tab)}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold shrink-0 transition-colors"
+              onClick={() => handleSelectStep(currentSection.tab)}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shrink-0 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer hover:scale-[1.02]"
+              title={`Open live ${currentSection.title} section`}
             >
-              Jump to Screen
+              <span>Open Section</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -260,8 +281,8 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
               {currentSection.suggestedActions.map((act, aIdx) => (
                 <button
                   key={aIdx}
-                  onClick={() => handleExecuteAction(act.tab, act.actionKey)}
-                  className="p-3 bg-white hover:bg-indigo-50/80 border border-indigo-200/80 rounded-xl text-xs font-semibold text-indigo-950 flex items-center justify-between shadow-xs transition-all hover:border-indigo-300 text-left group"
+                  onClick={() => handleSelectStep(act.tab, act.actionKey)}
+                  className="p-3 bg-white hover:bg-indigo-50/80 border border-indigo-200/80 rounded-xl text-xs font-semibold text-indigo-950 flex items-center justify-between shadow-xs transition-all hover:border-indigo-300 text-left group cursor-pointer"
                 >
                   <span className="group-hover:text-indigo-700 transition-colors">{act.label}</span>
                   <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -283,7 +304,7 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >
             Exit Walkthrough
           </button>
@@ -294,12 +315,19 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
               onClick={() => {
                 const prev = Math.max(0, currentSectionIndex - 1);
                 setCurrentSectionIndex(prev);
-                onNavigateTab(sections[prev].tab);
               }}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors"
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
+            </button>
+
+            <button
+              onClick={() => handleSelectStep(currentSection.tab)}
+              className="px-4 py-2 text-xs font-bold text-white bg-indigo-950 hover:bg-indigo-900 rounded-xl shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Open Step {currentSection.id} Section</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
 
             {currentSectionIndex < sections.length - 1 ? (
@@ -307,19 +335,18 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({
                 onClick={() => {
                   const next = currentSectionIndex + 1;
                   setCurrentSectionIndex(next);
-                  onNavigateTab(sections[next].tab);
                 }}
-                className="px-5 py-2 text-xs font-bold text-white bg-indigo-950 hover:bg-indigo-900 rounded-xl shadow-md flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>Next Section</span>
+                <span>Next Details</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={onClose}
-                className="px-5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-md flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>Finish Walkthrough</span>
+                <span>Finish</span>
                 <CheckCircle2 className="w-4 h-4" />
               </button>
             )}

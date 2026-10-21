@@ -27,7 +27,9 @@ SAAHARA AI is structured as a **single, unified full-stack monorepo**.
 ```
 saahara-ai/
 ├── server/                         # BACKEND (Node.js + Express + TypeScript)
-│   └── index.ts                    # Express API server, TinyFish proxy & Privacy Filter
+│   ├── index.ts                    # Express API server, endpoints & Privacy Filter
+│   ├── intelligenceEngine.ts       # Round 2: Multi-step Safety Intelligence, SSRF guard, cache
+│   └── test-agent.ts               # Round 2: 27-test automated test suite
 ├── src/                            # FRONTEND (React 19 + TypeScript + Tailwind CSS)
 │   ├── assets/                     # Static images, SVG badges, hero graphics
 │   ├── components/                 # Reusable UI components & feature modules
@@ -42,8 +44,8 @@ saahara-ai/
 │   │   │   ├── NearbyAlertsModal.tsx # Consent-based corridor safety alerts modal
 │   │   │   └── RouteChangeBanner.tsx # Neutral, assistive route diversion notification
 │   │   ├── LivingSafetyMap/        # Module 1: Living Safety Map
-│   │   │   ├── SafetyMap.tsx       # Leaflet map, nationwide search, uncertainty radii
-│   │   │   ├── SafetyListView.tsx  # Density list view with observation history timeline
+│   │   │   ├── SafetyMap.tsx       # Leaflet map, nationwide search, uncertainty radii, AI investigation trigger
+│   │   │   ├── SafetyListView.tsx  # Density list view with observation history timeline & AI Investigate action
 │   │   │   └── SubmitReportModal.tsx # Grouped observation submission & conflict detection
 │   │   ├── SaheliCircle/           # Module 2: Nearby Community & Walking Companions
 │   │   │   ├── CommunityFeed.tsx   # Walking companion feed & public meeting points
@@ -52,7 +54,7 @@ saahara-ai/
 │   │   │   ├── PrivateChatModal.tsx # Mutual-consent locked direct messaging
 │   │   │   └── UserProfileModal.tsx # Privacy-preserving limited profile preview
 │   │   ├── SaheliSignal/           # Module 3: First-Hand Place Observations
-│   │   │   ├── SignalBoard.tsx     # Recent place observations & corridor notices
+│   │   │   ├── SignalBoard.tsx     # Recent place observations & corridor notices with AI Investigate
 │   │   │   └── PublishSignalModal.tsx # First-hand place observation submission
 │   │   ├── SaheliShare/            # Module 4: Cab-Trip Coordination & Ride Sharing
 │   │   │   ├── SaheliShareModule.tsx # Corridor & time matching view (Zero cab API dep)
@@ -63,15 +65,14 @@ saahara-ai/
 │   │   ├── SupportNavigator/       # Module 5: Survivor Support Navigator
 │   │   │   ├── SupportNavigatorModule.tsx # Directory of verified helplines & legal aid
 │   │   │   └── EvidencePreservationGuide.tsx # 4-step digital evidence recording guide
-│   │   ├── TinyFishResearch/       # Module 6: TinyFish Public-Information Research
-│   │   │   └── TinyFishPanel.tsx   # Statutory research UI, fact/summary separation
+│   │   ├── TinyFishResearch/       # Module 6 & Round 2: TinyFish Public Research & Safety Intelligence
+│   │   │   ├── LiveSafetyIntelligenceAgent.tsx # Round 2: Interactive multi-step AI research agent
+│   │   │   └── TinyFishPanel.tsx   # Tabbed panel: Live Intelligence Agent + Statutory Knowledge Base
 │   │   └── ProfileSettings/        # User profile, privacy controls & data export/purge
 │   │       └── ProfileSettingsView.tsx
 │   ├── data/
 │   │   └── sampleData.ts           # Searchable Indian locations, helplines, seed reports
-│   ├── services/
-│   │   ├── storageService.ts       # Central data manager, pub/sub, issue grouping logic
-│   │   └── tinyFishService.ts      # Client adapter for /api/tinyfish/research & fallback
+│   │   └── tinyFishService.ts      # Client adapter for /api/tinyfish/intelligence & /api/tinyfish/research
 │   ├── types/
 │   │   └── index.ts                # TypeScript interfaces and data models
 │   ├── App.css                     # Global utility styles
@@ -177,6 +178,7 @@ TINYFISH_API_URL=https://api.search.tinyfish.ai
 
 * `npm run dev`: Runs only the Vite frontend dev server (port 5173).
 * `npm run server`: Runs only the Express backend server (port 3001).
+* `npm run test:agent`: Runs the 27-test automated verification suite for the Round 2 Live Safety Intelligence Agent.
 * `npm run build`: Type-checks and creates an optimized production build in `dist/`.
 * `npm run preview`: Previews the production build locally.
 
@@ -188,7 +190,7 @@ To ensure transparency for hackathon evaluations and team development, here is t
 
 | Module / Feature | What Is Fully Implemented | What Is a Demo Simulation / Future Production Track |
 |---|---|---|
-| **Living Safety Map** | Interactive Leaflet map with OpenStreetMap tiles; nationwide search bar with autocomplete across Indian transit hubs (*Indira Gandhi Metro, BKC, Connaught Place, MG Road, etc.*); keyboard navigation; 100–300m public landmark uncertainty radius buffers; dual Map/List view. | Municipal Open Data API integrations (e.g. BBMP Sahaaya or Delhi PWD civic tickets) are not hooked to live government ticket databases. |
+| **Living Safety Map** | Interactive Leaflet map with OpenStreetMap tiles; nationwide search bar with autocomplete across Indian transit hubs (*Indira Gandhi Metro, BKC, Connaught Place, MG Road, etc.*); keyboard navigation; 100–300m public landmark uncertainty radius buffers; dual Map/List view; direct *"Investigate with AI"* triggers on every observation card and map popup. | Municipal Open Data API integrations (e.g. BBMP Sahaaya or Delhi PWD civic tickets) are not hooked to live government ticket databases. |
 | **Safety Issue Grouping** | Submitting a report at an existing location and category detects the issue, prompts confirmation, appends to the issue's chronological timeline, preserves original reports, and recalculates status. | Issue resolution is not tied to real municipal repair crews. |
 | **Conflict & Uncertainty Logic** | If an issue previously reported defective is observed working, status automatically shifts to *"Condition Uncertain / Needs Recheck"* rather than declaring it fixed. Historical harassment records never auto-expire. | Multi-user threshold quorum algorithms can be integrated in production. |
 | **Consent-Based Nearby Alerts** | Interactive permission modal with manual transit landmark fallback; recent corridor alerts; direct jump to map marker; no background GPS tracking. | Web Push Notifications / Service Worker background pings are simulated via local reactive state. |
@@ -197,7 +199,7 @@ To ensure transparency for hackathon evaluations and team development, here is t
 | **Saheli Share (Cab Sharing)** | Works 100% independently of ride-hailing APIs (no Uber/Ola API required); departure window and corridor matching; selective sharing consent gate; unverified driver and vehicle badge labeling. | In-app ride bookings with cab companies are intentionally NOT implemented (operates as peer coordination). |
 | **Fare Split Calculator** | Mathematical split calculator with clear non-payment disclaimers. | Direct UPI / banking payment gateway integration is a future production pathway. |
 | **Survivor Support Navigator** | Verified directory of official Indian emergency helplines (**112**, **1091**, **181**, **15100 NALSA**, **14416 Tele-MANAS**, **1930 Cybercrime**) with "What this helps with" plain explanations; safe external links (`target="_blank"`); comprehensive 4-step evidence preservation protocol. | Direct telephonic CTI integration is handled via standard device `tel:` links. |
-| **TinyFish Public Research** | Backend Express proxy with privacy filter middleware (rejects queries containing passwords, phone numbers, or GPS coords); calls live TinyFish Search API if key is present; falls back gracefully to pre-verified `.gov.in`/`.nic.in` statutory database; fact vs summary separation. | Live automated web scraping of dynamic gazettes requires an active TinyFish developer key. |
+| **TinyFish Live Safety Intelligence (Round 2)** | Multi-step research workflow (`POST /api/tinyfish/intelligence`); bounded query plan formulation; calls TinyFish Search & Fetch APIs with strict SSRF URL protection; 15-minute in-memory caching (`forceRefresh` bypass); detects conflicting claims between official civic records and community reports; pre-verified Indian transit corridor fallbacks (*Indira Gandhi Metro, BKC Mumbai, 12th Main Indiranagar, Connaught Place, CMH Road*); strict trust states (`official_information_found`, `corroborated_by_independent_sources`, `conflicting_information`, etc.); explicit notice that absence of records != safe; 27 automated tests passing (`npm run test:agent`). | Direct live web crawling of non-indexed internal police intranets requires official law enforcement clearance. |
 | **Judge Walkthrough** | 4 grouped evaluation sections with Next, Back, Skip, Exit, and Jump-to-Section controls; contextual interactive *"Tap here"* triggers that open live modals. | None. This is a fully functional guided walkthrough built specifically for hackathon evaluators. |
 
 ---

@@ -520,7 +520,30 @@ export const storageService = {
       return OFFICIAL_SUPPORT_RESOURCES;
     }
     try {
-      return JSON.parse(raw);
+      const parsed: SupportResource[] = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(OFFICIAL_SUPPORT_RESOURCES));
+        return OFFICIAL_SUPPORT_RESOURCES;
+      }
+
+      // Preserve user bookmarks while refreshing canonical metadata and verified officialSourceUrls
+      const savedMap = new Map<string, boolean>();
+      parsed.forEach(item => {
+        if (item && item.id) {
+          savedMap.set(item.id, Boolean(item.isSaved));
+        }
+      });
+
+      const synced = OFFICIAL_SUPPORT_RESOURCES.map(canonical => ({
+        ...canonical,
+        isSaved: savedMap.has(canonical.id) ? savedMap.get(canonical.id)! : canonical.isSaved,
+      }));
+
+      const newRaw = JSON.stringify(synced);
+      if (newRaw !== raw) {
+        localStorage.setItem(STORAGE_KEYS.RESOURCES, newRaw);
+      }
+      return synced;
     } catch {
       return OFFICIAL_SUPPORT_RESOURCES;
     }

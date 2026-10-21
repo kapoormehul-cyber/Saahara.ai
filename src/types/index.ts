@@ -275,3 +275,85 @@ export interface NearbySafetyAlert {
   timestamp: string;
   coordinates: [number, number];
 }
+
+// -------------------------------------------------------------
+// ROUND 2: LIVE SAFETY INTELLIGENCE AGENT TYPES
+// -------------------------------------------------------------
+
+export type EvidenceState =
+  | 'official_information_found'
+  | 'community_report'
+  | 'corroborated_by_independent_sources'
+  | 'conflicting_information'
+  | 'not_independently_verified'
+  | 'source_unavailable_or_outdated';
+
+export type EvidenceSourceType =
+  | 'official_portal'
+  | 'civic_body'
+  | 'police_advisory'
+  | 'transit_authority'
+  | 'community_observation'
+  | 'news_archival';
+
+export interface IntelligenceEvidenceItem {
+  id: string;
+  title: string;
+  sourceType: EvidenceSourceType;
+  state: EvidenceState;
+  summary: string;
+  extractedText?: string;
+  sourceUrl?: string;
+  domain?: string;
+  publishDate?: string;
+  organization?: string;
+  verifiedFacts: string[];
+  notes?: string;
+}
+
+export interface ResearchPlanStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+  targetQuery?: string;
+  targetDomain?: string;
+  findingsCount?: number;
+}
+
+export interface ConflictingClaim {
+  id: string;
+  issue: string;
+  sourceA: { name: string; claim: string; url?: string };
+  sourceB: { name: string; claim: string; url?: string };
+  explanation: string;
+}
+
+export interface SafetyIntelligenceBriefing {
+  query: string;
+  approximateArea: string;
+  observationId?: string;
+  generatedAt: string;
+  status: 'live_result' | 'demo_curated_result';
+  summary: string;
+  overallAssessment: string;
+  researchPlan: ResearchPlanStep[];
+  evidence: IntelligenceEvidenceItem[];
+  conflicts: ConflictingClaim[];
+  unverifiedGaps: string[];
+  helplines: Array<{ name: string; contact: string; organization: string }>;
+  cached?: boolean;
+  executionNote: string;
+  absenceOfDataNotice: string;
+}
+
+export type InvestigationProgressStage =
+  | 'idle'
+  | 'analyzing_query'
+  | 'formulating_plan'
+  | 'executing_search'
+  | 'fetching_sources'
+  | 'cross_referencing'
+  | 'generating_briefing'
+  | 'completed'
+  | 'error';

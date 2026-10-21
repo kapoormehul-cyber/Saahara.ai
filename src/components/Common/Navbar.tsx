@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'signal', label: 'Saheli Signal', icon: Radio },
     { id: 'share', label: 'Saheli Share', icon: Share2 },
     { id: 'support', label: 'Support Navigator', icon: HeartHandshake },
-    { id: 'tinyfish', label: 'TinyFish Research', icon: Search },
+    { id: 'tinyfish', label: 'Safety Intelligence Agent', icon: Sparkles },
   ];
 
   const handleTabClick = (id: string) => {

@@ -9,14 +9,19 @@ import {
   ShieldCheck, 
   Filter, 
   AlertCircle,
-  Eye
+  Eye,
+  Sparkles
 } from 'lucide-react';
 import { SafetyObservation } from '../../types';
 import { storageService } from '../../services/storageService';
 import { PublishSignalModal } from './PublishSignalModal';
 import { getStatusBadge } from '../LivingSafetyMap/SafetyMap';
 
-export const SignalBoard: React.FC = () => {
+interface SignalBoardProps {
+  onInvestigateObservation?: (obs: SafetyObservation) => void;
+}
+
+export const SignalBoard: React.FC<SignalBoardProps> = ({ onInvestigateObservation }) => {
   const [observations, setObservations] = useState<SafetyObservation[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -138,6 +143,16 @@ export const SignalBoard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {onInvestigateObservation && (
+                    <button
+                      onClick={() => onInvestigateObservation(obs)}
+                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-lg font-medium flex items-center gap-1 transition-colors"
+                      title="Investigate observation with Live Safety Intelligence"
+                    >
+                      <Sparkles className="w-3 h-3 text-indigo-600" />
+                      <span>Investigate</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => handleMarkHelpful(obs.id)}
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium flex items-center gap-1 transition-colors"

@@ -245,53 +245,68 @@ To ensure total transparency for hackathon evaluators and developers, here is th
 
 | Tool / Capability | Status in Codebase | Exact File & Location | Purpose & Implementation Details |
 |---|---|---|---|
-| **TinyFish Search API (`/v1/search`)** | **Implemented** | [`server/index.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/index.ts#L47-L85) | Executes targeted search queries restricted to official government domains (`gov.in`, `nic.in`, `nalsa.gov.in`, `ncw.nic.in`) with a result limit of 3. Invoked via `POST` with `X-API-Key`. |
+| **TinyFish Search API (`/v1/search`)** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts) & [`server/index.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/index.ts) | Executes bounded queries across official government and transit authority domains (`gov.in`, `nic.in`, `bmrc.co.in`, `delhimetrorail.com`, etc.). Invoked via `POST` with `X-API-Key`. |
+| **TinyFish Fetch API (`/v1/fetch`)** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts) | Deep extraction of verified text snippets from official public links discovered via Search, secured with strict SSRF validation. |
+| **Server-Side SSRF Safe URL Validator** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts#L70-L98) | Validates all target fetch URLs; strictly restricts protocols to `http:`/`https:`, blocking loopback (`127.0.0.1`), cloud metadata (`169.254.169.254`), and private subnets (`10.x`, `192.168.x`). |
 | **Server-Side Privacy Filter Guard** | **Implemented** | [`server/index.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/index.ts#L18-L30) | Custom Express middleware inspecting all outgoing queries to prevent private identity data from reaching external AI APIs. |
-| **Client Adapter & Sanitizer** | **Implemented** | [`src/services/tinyFishService.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/src/services/tinyFishService.ts#L38-L72) | Truncates input queries to a 150-character ceiling and handles seamless failover between live API responses and statutory fallback snapshots. |
-| **Pre-Verified Statutory Fallback Adapter** | **Implemented** | [`src/data/sampleData.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/src/data/sampleData.ts#L720-L808) | Provides curated, gazette-verified statutory snapshots for NALSA, MWCD, and Cyber Crime Portal so the prototype remains functional even when offline or without an API key. |
-| **TinyFish Fetch API** | **Not Implemented** | — | Not present in the current prototype; reserved for future deep extraction of dynamic circulars. |
-| **TinyFish Web Agent / Browser Infra** | **Not Implemented** | — | SAAHARA AI does **not** launch autonomous browser agents or headless browser crawlers. All communication is lightweight REST JSON. |
+| **15-Minute TTL Cache** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts#L62-L68) | In-memory cache preventing duplicate calls and external API quota waste; supports explicit `forceRefresh` cache bypass. |
+| **Multi-Source Comparison & Conflict Detection** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts) | Cross-references municipal open tickets (e.g. BBMP Sahaaya) against community observations, populating structured conflict records with explanations. |
+| **Pre-Verified Transit Corridors Fallback** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts#L100-L360) | High-fidelity intelligence datasets for major Indian transit hubs (*Indira Gandhi Metro/Airport Express, BKC Mumbai, 12th Main Indiranagar, Connaught Place, CMH Road*). |
+| **Absence of Records != Safe Guard** | **Implemented** | [`server/intelligenceEngine.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/intelligenceEngine.ts) | Explicit safety rule: an absence of reported civic incidents never triggers a false "safe" rating. SAAHARA AI never guarantees safety. |
+| **Automated Test Suite (27 tests)** | **Implemented** | [`server/test-agent.ts`](file:///C:/Users/Mehul/.gemini/antigravity/scratch/saahara-ai/server/test-agent.ts) | Automated CLI verification suite covering SSRF rules, corridor intelligence, conflict detection, missing evidence, caching, and privacy filters. Run via `npm run test:agent`. |
 
 ---
 
 ### 3. End-to-End Architectural Workflow
 
-The following trace details the complete execution lifecycle when a user initiates a research query:
+The following trace details the multi-step research workflow of the **Live Safety Intelligence Agent**:
 
 ```
-[ User Action in UI ]
+[ User Action in UI / Map / Signal ]
         │
         ▼
-[ TinyFishPanel.tsx ] ──────────────► User selects a topic preset or types a question
+[ LiveSafetyIntelligenceAgent.tsx ] ──► Formulates inquiry for transit corridor or linked report (OBS-*)
         │
         ▼
-[ tinyFishService.ts ] ─────────────► Sanitizes query: trims whitespace, slices to 150 chars max
+[ tinyFishService.ts ] ──────────────► Sanitizes query: trims whitespace, slices to 150 chars max
         │
-        ▼  POST /api/tinyfish/research
-[ Vite Proxy (port 5173) ] ─────────► Forwards /api/* to http://localhost:3001
+        ▼  POST /api/tinyfish/intelligence
+[ Vite Proxy (port 5173) ] ──────────► Forwards /api/* to http://localhost:3001
         │
         ▼
 [ Express Backend (server/index.ts) ]
         │
         ├──► [ Privacy Filter Guard ] ──► Any sensitive keywords (password, coords, phone)?
         │                                  ├── YES ──► Returns HTTP 400 Bad Request (Halt)
-        │                                  └── NO  ──► Passes to route handler
-        │
-        ├──► Is TINYFISH_API_KEY configured?
-        │       │
-        │       ├── YES ──► Calls TinyFish Search API:
-        │       │            POST https://api.search.tinyfish.ai/v1/search
-        │       │            Header: X-API-Key: <key>
-        │       │            Body: { query, domains: ['gov.in', 'nic.in', ...], limit: 3 }
-        │       │            Returns status: "live_result"
-        │       │
-        │       └── NO (or on timeout/network error)
-        │               ──► Transparent Fallback: Loads curated statutory record from NALSA/MWCD
-        │                   Returns status: "demo_curated_result"
+        │                                  └── NO  ──► Passes to intelligence engine
         │
         ▼
-[ Client Response Rendered ] ───────► Displays structured cards in TinyFishPanel.tsx
+[ Intelligence Engine (server/intelligenceEngine.ts) ]
         │
+        ├──► 1. Check In-Memory Cache (15m TTL)?
+        │       ├── Cache Hit (and forceRefresh=false) ──► Returns cached briefing immediately (cached: true)
+        │       └── Cache Miss or forceRefresh=true    ──► Proceeds to live workflow
+        │
+        ├──► 2. Formulate Bounded Research Plan (3-4 explicit steps)
+        │
+        ├──► 3. TINYFISH_API_KEY Configured?
+        │       │
+        │       ├── YES ──► Step A: TinyFish Search API (POST https://api.search.tinyfish.ai/v1/search)
+        │       │           Step B: SSRF Safe URL Check on discovered links
+        │       │           Step C: TinyFish Fetch API (POST https://api.fetch.tinyfish.ai/v1/fetch)
+        │       │           Step D: Extract verified text snippets & compile evidence items
+        │       │
+        │       └── NO (or on API timeout / empty results)
+        │               ──► Matches Pre-Verified Transit Corridor (Indiranagar, BKC, CP, Delhi Metro, CMH)
+        │                   OR synthesizes bounded fallback with explicit absenceOfDataNotice
+        │
+        ├──► 4. Cross-Reference Claims & Detect Discrepancies (Civic Ticket vs Community Observation)
+        │
+        ├──► 5. Generate Structured Safety Intelligence Briefing
+        │
+        ▼
+[ Client Response Rendered ] ───────► Displays structured briefing, evidence cards, conflict callouts,
+        │                             unverified gaps, and verified emergency helplines
         ▼
 [ Inspect Official Source ] ────────► User clicks verified .gov.in link (opens in secure new tab)
 ```

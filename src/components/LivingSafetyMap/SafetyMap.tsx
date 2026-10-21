@@ -32,9 +32,13 @@ import { SafetyListView } from './SafetyListView';
 interface SafetyMapProps {
   onOpenSubmitModal?: () => void;
   targetHighlightIssueId?: string | null;
+  onInvestigateObservation?: (obs: SafetyObservation) => void;
 }
 
-export const SafetyMap: React.FC<SafetyMapProps> = ({ targetHighlightIssueId }) => {
+export const SafetyMap: React.FC<SafetyMapProps> = ({ 
+  targetHighlightIssueId,
+  onInvestigateObservation 
+}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -267,7 +271,7 @@ export const SafetyMap: React.FC<SafetyMapProps> = ({ targetHighlightIssueId }) 
           <div style="font-size: 11px; color: #64748B; margin-bottom: 8px;">
             🛡️ Confirmations: <strong>${obs.confirmationsCount} community members</strong>
           </div>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button id="btn-corroborate-${obs.id}" style="
               flex: 1; 
               background: #312E81; 
@@ -280,6 +284,18 @@ export const SafetyMap: React.FC<SafetyMapProps> = ({ targetHighlightIssueId }) 
               cursor: pointer;
             ">
               + Corroborate
+            </button>
+            <button id="btn-investigate-${obs.id}" style="
+              background: #4F46E5; 
+              color: white; 
+              border: none; 
+              border-radius: 6px; 
+              padding: 5px 8px; 
+              font-size: 11px; 
+              font-weight: 600; 
+              cursor: pointer;
+            ">
+              ✨ AI Investigate
             </button>
             <button id="btn-helpful-${obs.id}" style="
               background: #F1F5F9; 
@@ -305,6 +321,13 @@ export const SafetyMap: React.FC<SafetyMapProps> = ({ targetHighlightIssueId }) 
           corrBtn.onclick = () => {
             storageService.corroborateObservation(obs.id);
             marker.closePopup();
+          };
+        }
+        const invBtn = document.getElementById(`btn-investigate-${obs.id}`);
+        if (invBtn && onInvestigateObservation) {
+          invBtn.onclick = () => {
+            marker.closePopup();
+            onInvestigateObservation(obs);
           };
         }
         const helpBtn = document.getElementById(`btn-helpful-${obs.id}`);
@@ -555,6 +578,7 @@ export const SafetyMap: React.FC<SafetyMapProps> = ({ targetHighlightIssueId }) 
             setTargetIssueForModal(obs);
             setIsSubmitModalOpen(true);
           }}
+          onInvestigateObservation={onInvestigateObservation}
         />
       )}
 
